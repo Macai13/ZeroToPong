@@ -18,7 +18,7 @@ fn main()
         .add_plugins(PerfUiPlugin)
 
         .add_systems(Startup, (spawn_camera, spawn_players, spawn_ball, spawn_background, spawn_fps))
-        .add_systems(Update, (move_paddle, move_ball, ball_collide))
+        .add_systems(Update, (move_paddle, move_ball, ball_collide, ball_out_of_bounds))
         
         .run();
 }
@@ -132,13 +132,13 @@ fn move_paddle(
     {
         if input.pressed(settings.move_up)
         {
-            pos.translation.y += 200. * time.delta_seconds();
+            pos.translation.y += 300. * time.delta_seconds();
             pos.translation.y = pos.translation.y.clamp(-175., 175.);
         }
 
         if input.pressed(settings.move_down)
         {
-            pos.translation.y -= 200. * time.delta_seconds();
+            pos.translation.y -= 300. * time.delta_seconds();
             pos.translation.y = pos.translation.y.clamp(-175., 175.);
         }
     }
@@ -191,18 +191,43 @@ fn ball_collide(
             ball.translation.x + BALL_DIAMETER / 2. > paddle.translation.x - PADDLE_WIDTH / 2. &&
             ball.translation.y + BALL_DIAMETER / 2. > paddle.translation.y - PADDLE_HEIGHT / 2.
             {
-                velocity.0.x *= -1.;
-                velocity.0.y = rand::thread_rng().gen::<f32>() * 100.;
+                println!("ball x: {}", velocity.0.x);
+                println!("ball y: {}", velocity.0.y);
+
+                if velocity.0.x.abs() < 2000.
+                {
+                    velocity.0.x *= -1.1;
+                }
+                else  
+                {
+                    velocity.0.x *= -1.;
+                }
+                velocity.0.y = rand::thread_rng().gen::<f32>() * rand::thread_rng().gen::<i8>() as f32;
                 println!("Ball collided with paddle");
+            }
+
+            if ball.translation.y.abs() > 175.
+            {
             }
         }
     }
 }
 
 fn ball_out_of_bounds(
-    mut commands: Commands,
-    
+    mut balls: Query<(&mut Transform, &mut Ball)>,
 )
 {
-    todo!()
+    for (mut pos, mut velocity) in &mut balls
+    {
+        if pos.translation.x < -325.
+        {
+            pos.translation = Vec3::new(0., 0., 0.);
+            velocity.0.x = 100.; 
+        }
+        else if pos.translation.x > 325.
+        {
+            pos.translation = Vec3::new(0., 0., 0.);
+            velocity.0.x = -100.; 
+        }
+    }
 }
